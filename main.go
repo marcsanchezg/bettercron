@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
+	"strconv"
 	"syscall"
 
 	"flag"
@@ -19,7 +20,6 @@ type Task struct {
 	User        string `yaml:"user"`
 	CommandDesc string `yaml:"command_description"`
 	Period      string `yaml:"period"`
-	Logging     string `yaml: log`
 	Command     string `yaml:"command"`
 }
 
@@ -38,7 +38,7 @@ func init() {
 	// Define other flags here
 }
 
-func executeCommand(command string) {
+func executeCommand(command string, logger *log.Logger) {
 	cmd := exec.Command("bash", "-c", command)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -46,7 +46,7 @@ func executeCommand(command string) {
 		return
 	}
 
-	fmt.Printf("Command output: %s\n", output)
+	logger.Printf("Command output: %s\n", output)
 }
 
 func main() {
@@ -59,10 +59,25 @@ func main() {
 		return
 	}
 
-	fmt.Println(yamlFile)
+	// Open the log file
+	logOutput := os.Stdout
+	if logFile != "" {
+		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("Failed to open log file: %v", err)
+		}
+		logOutput = file
+		defer file.Close()
+	}
+
+	// Set up the logger
+	logger := log.New(logOutput, "", log.LstdFlags)
+
+	logger.Println("Config file location: " + yamlFile)
+	logger.Println("Log file location: " + logFile)
 
 	// Read the YAML file
-	yamlFile, err := ioutil.ReadFile("file.yml")
+	yamlFile, err := ioutil.ReadFile(yamlFile)
 	if err != nil {
 		log.Fatalf("Failed to read YAML file: %v", err)
 	}
@@ -79,13 +94,40 @@ func main() {
 
 	// Schedule tasks
 	for _, task := range tasks {
+
+		// Retrieve the user information
+		u, err := user.Lookup("username")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Convert the UID and GID to integers
+		uid := u.Uid
+		gid := u.Gid
+
+		uidInt, err := strconv.Atoi(uid)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		gidInt, err := strconv.Atoi(gid)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		command := task.Command
 		cronExpression := task.Period
-		_, err := c.AddFunc(cronExpression, func() {
-			executeCommand(command)
-		})
-		if err != nil {
-			log.Printf("Failed to schedule task: %s", err)
+
+		if cronExpression == "@reboot" {
+			executeCommand(command, logger)
+		} else {
+
+			_, err := c.AddFunc(cronExpression, func() {
+				executeCommand(command, logger)
+			})
+			if err != nil {
+				log.Printf("Failed to schedule task: %s", err)
+			}
 		}
 	}
 

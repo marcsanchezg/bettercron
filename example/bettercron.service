@@ -1,0 +1,12 @@
+[Unit]
+Description=bettercron
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/bettercron
+Restart=always
+#User=bettercron
+#Group=bettercron
+
+[Install]
+WantedBy=multi-user.target

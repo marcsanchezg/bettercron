@@ -1,0 +1,8 @@
+- user: msanchez
+  command_description: run at reboot a whoami
+  period: "@reboot"
+  command: whoami
+- user: msanchez
+  command_description: run every minute a bash script
+  period: "* * * * *"
+  command: bash /tmp/ohmy.sh
