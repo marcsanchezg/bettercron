@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"os/user"
-	"strconv"
 	"syscall"
 
 	"flag"
@@ -38,15 +37,21 @@ func init() {
 	// Define other flags here
 }
 
-func executeCommand(command string, logger *log.Logger) {
-	cmd := exec.Command("bash", "-c", command)
+func executeCommand(command string, logger *log.Logger, username string) {
+	var cmd *exec.Cmd
+	if username == "" {
+		cmd = exec.Command("bash", "-c", command)
+	} else {
+		logger.Println("Running as: " + username)
+		cmd = exec.Command("sudo", "-u", username, "bash", "-c", command)
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Error executing command: %s\n", err)
+		logger.Printf("Error executing command: %s\n", err)
 		return
 	}
 
-	logger.Printf("Command output: %s\n", output)
+	logger.Printf("Command output: \n%s\n", output)
 }
 
 func main() {
@@ -74,7 +79,7 @@ func main() {
 	logger := log.New(logOutput, "", log.LstdFlags)
 
 	logger.Println("Config file location: " + yamlFile)
-	logger.Println("Log file location: " + logFile)
+	logger.Println("Log file location: " + logFile + "\n")
 
 	// Read the YAML file
 	yamlFile, err := ioutil.ReadFile(yamlFile)
@@ -96,37 +101,25 @@ func main() {
 	for _, task := range tasks {
 
 		// Retrieve the user information
-		u, err := user.Lookup("username")
+		_, err := user.Lookup(task.User)
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Convert the UID and GID to integers
-		uid := u.Uid
-		gid := u.Gid
-
-		uidInt, err := strconv.Atoi(uid)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		gidInt, err := strconv.Atoi(gid)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		command := task.Command
-		cronExpression := task.Period
-
-		if cronExpression == "@reboot" {
-			executeCommand(command, logger)
+			log.Print(err)
 		} else {
+			command := task.Command
+			cronExpression := task.Period
 
-			_, err := c.AddFunc(cronExpression, func() {
-				executeCommand(command, logger)
-			})
-			if err != nil {
-				log.Printf("Failed to schedule task: %s", err)
+			if cronExpression == "@reboot" {
+				logger.Println("Command description: " + task.CommandDesc)
+				executeCommand(command, logger, task.User)
+			} else {
+
+				_, err := c.AddFunc(cronExpression, func() {
+					logger.Println("Command description: " + task.CommandDesc)
+					executeCommand(command, logger, task.User)
+				})
+				if err != nil {
+					log.Printf("Failed to schedule task: %s", err)
+				}
 			}
 		}
 	}
