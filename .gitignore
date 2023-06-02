@@ -1,3 +1,5 @@
 bettercron
 go.mod
 go.sum
+
+dist/
