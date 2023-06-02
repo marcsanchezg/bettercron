@@ -1,8 +1,0 @@
-- user: msanchez
-  command_description: run every minute a curl to 8.8.8.8
-  period: "* * * * *"
-  command: whoami
-- user: msanchez2
-  command_description: run every minute a curl to 8.8.8.8
-  period: "*/2 * * * *"
-  command: whoami | wc -l
