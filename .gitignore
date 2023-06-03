@@ -1,6 +1,3 @@
 bettercron
-go.mod
-go.sum
-
 dist/
 .goreleaser.yaml
