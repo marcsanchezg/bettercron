@@ -22,6 +22,9 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - bettercron.service
+      - src: "examples/bettercron.service"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
