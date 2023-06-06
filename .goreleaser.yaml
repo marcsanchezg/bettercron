@@ -4,6 +4,8 @@ before:
   hooks:
     # You may remove this if you don't use go modules.
     - go mod tidy
+    # To avoid git dirty state due this file
+    - git checkout go.sum
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
@@ -11,30 +13,31 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+    goarch:
+      - amd64
+      - '386'
+      - arm
+      - arm64
 
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
-      - dst: bettercron.service
-      - src: "examples/bettercron.service"
+      - src: "example/bettercron.service"
 checksum:
-  name_template: 'checksums.txt'
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - '^chore:'
+      - '[ci skip]$'
+      - make fmt
+      - fix go.sum
+      - go mod tidy
 #env_files:
 #  github_token: ~/.github_token
 # The lines beneath this are called `modelines`. See `:help modeline`
