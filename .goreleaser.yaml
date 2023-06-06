@@ -23,7 +23,7 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
-      - bettercron.service
+      - dst: bettercron.service
       - src: "examples/bettercron.service"
 checksum:
   name_template: 'checksums.txt'
