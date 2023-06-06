@@ -27,8 +27,8 @@ archives:
     - goos: linux
       format: tar.gz
     files:
-      - path: examples
-        strip_components: 1
+    - path: examples
+      strip_components: 1
 checksum:
   name_template: 'checksums.txt'
 snapshot:
