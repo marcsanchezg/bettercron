@@ -9,7 +9,6 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-      - BUILDVCS=false
     goos:
       - linux
 
@@ -27,6 +26,9 @@ archives:
     format_overrides:
     - goos: linux
       format: tar.gz
+    files:
+      - path: examples
+        strip_components: 1
 checksum:
   name_template: 'checksums.txt'
 snapshot:
