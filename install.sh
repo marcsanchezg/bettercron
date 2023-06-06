@@ -8,15 +8,24 @@ ARCHIVE_NAME="bettercron_Linux_$ARCH.tar.gz" # Replace with the actual archive n
 INSTALL_DIR="/usr/bin" # Directory to install the binary
 CONFIG_DIR="/etc/bettercron" # Directory to install the config file
 SERVICE_DIR="/etc/systemd/system" # Directory to install the systemd service
-TEMPORARY_DIR="/tmp/bettercron" # Directory to store temporary exporter tar.gz
 
 # Create user
 sudo useradd -m -s /usr/sbin/nologin -G sudo -p "$(openssl passwd -1 '')" bettercron
 
-# Download and extract the latest release
-curl -L "https://github.com/$REPO/releases/latest/download/$ARCHIVE_NAME" -o "$ARCHIVE_NAME"
-sudo mkdir -p "$TEMPORARY_DIR"
-sudo tar -xvzf $ARCHIVE_NAME -C /tmp/bettercron
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  # In a git repo
+
+  TEMPORARY_DIR="/tmp/bettercron" # Directory to store temporary exporter tar.gz
+  # Download and extract the latest release
+  curl -L "https://github.com/$REPO/releases/latest/download/$ARCHIVE_NAME" -o "$ARCHIVE_NAME"
+  sudo mkdir -p "$TEMPORARY_DIR"
+  sudo tar -xvzf $ARCHIVE_NAME -C /tmp/bettercron
+else
+  # Not in a git repo
+  
+  TEMPORARY_DIR=$(dirname "$0") # Directory to store temporary exporter tar.gz
+fi
 
 # Copy binary
 sudo cp "$TEMPORARY_DIR/bettercron" "$INSTALL_DIR/bettercron"

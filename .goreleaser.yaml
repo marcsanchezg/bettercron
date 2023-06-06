@@ -25,7 +25,10 @@ archives:
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
       - src: "example/bettercron.service"
+        dst: "bettercron.service"
       - src: "example/config.yaml"
+        dst: "config.yaml"
+      - src: "install.sh"
       - src: "README.md"
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
