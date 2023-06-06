@@ -22,13 +22,9 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
-    format_overrides:
-    - goos: linux
-      format: tar.gz
     files:
-    - path: examples
-      strip_components: 1
+      - bettercron.service
+      - src: "examples/bettercron.service"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -39,8 +35,8 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-
-
+#env_files:
+#  github_token: ~/.github_token
 # The lines beneath this are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
