@@ -25,9 +25,9 @@ archives:
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
       - src: "example/bettercron.service"
-        dst: "bettercron.service"
+        dst: "/"
       - src: "example/config.yaml"
-        dst: "config.yaml"
+        dst: "/"
       - src: "install.sh"
       - src: "README.md"
 checksum:
