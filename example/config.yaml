@@ -1,8 +1,4 @@
-- user: msanchez
-  command_description: run at reboot a whoami
-  period: "@reboot"
-  command: whoami
-- user: msanchez
-  command_description: run every minute a bash script
-  period: "* * * * *"
-  command: bash /tmp/ohmy.sh
+- user: yoda #Run as user yoda
+  command_description: run at reboot a whoami #Short description of what the job does
+  period: "@reboot" #When will the job be run (following schedule expressions)
+  command: whoami #Command to execute

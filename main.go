@@ -8,11 +8,15 @@ import (
 	"os/signal"
 	"os/user"
 	"syscall"
+	"time"
 
 	"flag"
 
 	"github.com/robfig/cron/v3"
 	"gopkg.in/yaml.v2"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type Task struct {
@@ -23,10 +27,16 @@ type Task struct {
 }
 
 var (
+	// Define flags here
 	showHelp bool
 	yamlFile string
 	logFile  string
-	// Define other flags here
+
+	// Define prometheus metrics here
+	opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "myapp_processed_ops_total",
+		Help: "The total number of processed events",
+	})
 )
 
 func init() {
@@ -37,13 +47,13 @@ func init() {
 	// Define other flags here
 }
 
-func executeCommand(command string, logger *log.Logger, username string) {
+func executeCommand(command string, logger *log.Logger, task Task) {
 	var cmd *exec.Cmd
-	if username == "" {
+	if task.User == "" {
 		cmd = exec.Command("bash", "-c", command)
 	} else {
-		logger.Println("Running as: " + username)
-		cmd = exec.Command("sudo", "-u", username, "bash", "-c", command)
+		logger.Println()
+		cmd = exec.Command("sudo", "-u", task.User, "bash", "-c", command)
 	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -51,7 +61,16 @@ func executeCommand(command string, logger *log.Logger, username string) {
 		return
 	}
 
-	logger.Printf("Command output: \n%s\n", output)
+	logger.Printf("\nCommand description "+task.CommandDesc+"\nRunning as "+task.User+"\nCommand output: \n%s\n", output)
+}
+
+func recordMetrics() {
+	go func() {
+		for {
+			opsProcessed.Inc()
+			time.Sleep(2 * time.Second)
+		}
+	}()
 }
 
 func main() {
@@ -78,6 +97,7 @@ func main() {
 	// Set up the logger
 	logger := log.New(logOutput, "", log.LstdFlags)
 
+	logger.Println("------Starting bettercron------")
 	logger.Println("Config file location: " + yamlFile)
 	logger.Println("Log file location: " + logFile + "\n")
 
@@ -94,6 +114,10 @@ func main() {
 		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
 
+	/* 	recordMetrics()
+	   	http.Handle("/metrics", promhttp.Handler())
+	   	http.ListenAndServe(":2112", nil) */
+
 	// Create a new cron scheduler
 	c := cron.New()
 
@@ -106,16 +130,13 @@ func main() {
 			log.Print(err)
 		} else {
 			command := task.Command
-			cronExpression := task.Period
 
-			if cronExpression == "@reboot" {
-				logger.Println("Command description: " + task.CommandDesc)
-				executeCommand(command, logger, task.User)
-			} else {
-
+			switch cronExpression := task.Period; cronExpression {
+			case "@reboot":
+				go executeCommand(command, logger, task)
+			default:
 				_, err := c.AddFunc(cronExpression, func() {
-					logger.Println("Command description: " + task.CommandDesc)
-					executeCommand(command, logger, task.User)
+					go executeCommand(command, logger, task)
 				})
 				if err != nil {
 					log.Printf("Failed to schedule task: %s", err)
